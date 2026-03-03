@@ -5,8 +5,17 @@
 unsigned char StaticBuffer::blocks[BUFFER_CAPACITY][BLOCK_SIZE];
 struct BufferMetaInfo StaticBuffer::metainfo[BUFFER_CAPACITY];
 
+
+// declare the blockAllocMap array
+unsigned char StaticBuffer::blockAllocMap[DISK_BLOCKS];
+
 StaticBuffer::StaticBuffer()
 {
+
+   // Read blockAllocMap from disk blocks 0 to 3
+  for (int i = 0; i < 4; i++) {
+    Disk::readBlock(this->blockAllocMap + (i * BLOCK_SIZE), i);
+  }
 
   // initialise all blocks as free
   for (int bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++)
@@ -24,6 +33,10 @@ not modifying the buffer. So, we will define an empty destructor for now. In
 subsequent stages, we will implement the write-back functionality here.
 */
 StaticBuffer::~StaticBuffer() {
+  // Write blockAllocMap back to disk blocks 0 to 3
+ for (int i = 0; i < 4; i++) {
+   Disk::writeBlock(this->blockAllocMap + (i * BLOCK_SIZE), i);
+ }
   for (int i = 0; i < BUFFER_CAPACITY; i++)
   {
     if(!metainfo[i].free && metainfo[i].dirty)
@@ -117,3 +130,4 @@ int StaticBuffer::setDirtyBit(int blockNum){
     // return SUCCESS
     return SUCCESS; 
 }
+

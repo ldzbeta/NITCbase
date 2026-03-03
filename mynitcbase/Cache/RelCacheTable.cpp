@@ -25,6 +25,27 @@ int RelCacheTable::getRelCatEntry(int relId, RelCatEntry* relCatBuf) {
   return SUCCESS;
 }
 
+int RelCacheTable::setRelCatEntry(int relId, RelCatEntry *relCatBuf) {
+
+  if(relId<0 || relId>=MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+  /*entry corresponding to the relId in the Relation Cache Table is free*/
+  if(relCache[relId]==nullptr) {
+    return E_RELNOTOPEN;
+  }
+
+  // copy the relCatBuf to the corresponding Relation Catalog entry in
+  // the Relation Cache Table.
+  relCache[relId]->relCatEntry=*relCatBuf;
+
+  // set the dirty flag of the corresponding Relation Cache entry in
+  // the Relation Cache Table.
+  relCache[relId]->dirty=true;
+
+  return SUCCESS;
+}
+
 /* Converts a relation catalog record to RelCatEntry struct
     We get the record as Attribute[] from the BlockBuffer.getRecord() function.
     This function will convert that to a struct RelCatEntry type.
@@ -82,4 +103,13 @@ int RelCacheTable::resetSearchIndex(int relId) {
   // use setSearchIndex to set the search index to {-1, -1}
   RecId rec{-1,-1};
     return setSearchIndex(relId,&rec);
+}
+
+void RelCacheTable::relCatEntryToRecord(RelCatEntry *relCatEntry, union Attribute record[RELCAT_NO_ATTRS]){
+    strcpy(record[RELCAT_REL_NAME_INDEX].sVal, relCatEntry->relName);
+   record[RELCAT_NO_ATTRIBUTES_INDEX].nVal=(int)relCatEntry->numAttrs ;
+  record[RELCAT_FIRST_BLOCK_INDEX].nVal = (int)relCatEntry->firstBlk;
+  record[RELCAT_LAST_BLOCK_INDEX].nVal = (int)relCatEntry->lastBlk;
+  record[RELCAT_NO_SLOTS_PER_BLOCK_INDEX].nVal = (int)relCatEntry->numSlotsPerBlk;
+  record[RELCAT_NO_RECORDS_INDEX].nVal = (int)relCatEntry->numRecs;
 }
