@@ -408,6 +408,7 @@ int OpenRelTable::closeRel(int relId)
     RecBuffer relCatBlock(recId.block);
 
     // Write back to the buffer using relCatBlock.setRecord() with recId.slot
+     relCatBlock.setRecord(relcatBuffer,recId.slot);
   }
   // Free the RelCacheEntry
   if (RelCacheTable::relCache[relId] != nullptr)
