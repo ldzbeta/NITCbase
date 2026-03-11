@@ -666,9 +666,10 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
     /** Update attribute catalog entry (number of records in attribute catalog
         is decreased by numberOfAttributesDeleted) **/
     // i.e., #Records = #Records - numberOfAttributesDeleted
-    RelCacheTable::getRelCatEntry(ATTRCAT_RELID,&relcatEtntryBuff);
-    relcatEtntryBuff.numRecs -= numberOfAttributesDeleted;
-    RelCacheTable::setRelCatEntry(ATTRCAT_RELID,&relcatEtntryBuff);
+      RelCatEntry attrCatEntry;
+    RelCacheTable::getRelCatEntry(ATTRCAT_RELID, &attrCatEntry);
+    attrCatEntry.numRecs -= numberOfAttributesDeleted;
+    RelCacheTable::setRelCatEntry(ATTRCAT_RELID, &attrCatEntry);
     // Get the entry corresponding to attribute catalog from the relation
     // cache and update the number of records and set it back
     // (using RelCacheTable::setRelCatEntry() function)

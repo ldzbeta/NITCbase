@@ -164,51 +164,54 @@ OpenRelTable::OpenRelTable()
   strcpy(tableMetaInfo[ATTRCAT_RELID].relName, ATTRCAT_RELNAME);
 }
 
-OpenRelTable::~OpenRelTable()
-{
-
-  // close all open relations (from rel-id = 2 onwards. Why?)
-  for (int i = 2; i < MAX_OPEN; ++i)
-  {
-    if (!tableMetaInfo[i].free)
-    {
-      OpenRelTable::closeRel(i); // we will implement this function later
+OpenRelTable::~OpenRelTable() {
+    // free all the memory that you allocated in the constructor
+    for(int i = 2; i< MAX_OPEN; i++) {
+        if(!tableMetaInfo[i].free) {
+            OpenRelTable::closeRel(i);
+        }
     }
-  }
 
-  // write back + free relation cache entries for RELCAT and ATTRCAT exactly once
-  for (int relId = 0; relId < 2; ++relId)
-  {
-    if (RelCacheTable::relCache[relId] != nullptr)
-    {
-      if (RelCacheTable::relCache[relId]->dirty)
-      {
-        RelCatEntry relcatBuff;
-        RelCacheTable::getRelCatEntry(relId, &relcatBuff);
-        Attribute relcatRecord[RELCAT_NO_ATTRS];
-        RelCacheTable::relCatEntryToRecord(&relcatBuff, relcatRecord);
-        RecId recId = RelCacheTable::relCache[relId]->recId;
+    if(RelCacheTable::relCache[ATTRCAT_RELID]->dirty) {
+        RelCatEntry relCatEntry;
+        RelCacheTable::getRelCatEntry(ATTRCAT_RELID, &relCatEntry);
+
+        Attribute relCatRecord[RELCAT_NO_ATTRS];
+        RelCacheTable::relCatEntryToRecord(&relCatEntry, relCatRecord);
+
+        RecId recId = RelCacheTable::relCache[ATTRCAT_RELID]->recId;
+
         RecBuffer relCatBlock(recId.block);
-        relCatBlock.setRecord(relcatRecord, recId.slot);
-      }
-
-      free(RelCacheTable::relCache[relId]);
-      RelCacheTable::relCache[relId] = nullptr;
+        relCatBlock.setRecord(relCatRecord, recId.slot);
     }
-  }
+    //free(RelCacheTable::relCache[ATTRCAT_RELID]);
 
-  // Free attribute cache entries (they are linked lists)
-  for (int i = 0; i < 2; i++)
-  {
-    AttrCacheEntry *current = AttrCacheTable::attrCache[i];
-    while (current != nullptr)
-    {
-      AttrCacheEntry *next = current->next;
-      free(current);
-      current = next;
+    if(RelCacheTable::relCache[RELCAT_RELID]->dirty) {
+        RelCatEntry relCatEntry;
+        RelCacheTable::getRelCatEntry(RELCAT_RELID, &relCatEntry);
+
+        Attribute relCatRecord[RELCAT_NO_ATTRS];
+        RelCacheTable::relCatEntryToRecord(&relCatEntry, relCatRecord);
+
+        RecId recId = RelCacheTable::relCache[RELCAT_RELID]->recId;
+
+        RecBuffer relCatBlock(recId.block);
+        relCatBlock.setRecord(relCatRecord, recId.slot);
     }
-    AttrCacheTable::attrCache[i] = nullptr;
-  }
+    //free(RelCacheTable::relCache[RELCAT_RELID]);
+
+    for (int i = 0; i < 2; i++) {
+        AttrCacheEntry* curr = AttrCacheTable::attrCache[i];
+        while (curr != nullptr) {
+            AttrCacheEntry* next = curr->next; 
+            free(curr);                       
+            curr = next;                      
+        }
+        AttrCacheTable::attrCache[i] = nullptr; 
+        
+        free(RelCacheTable::relCache[i]);
+        RelCacheTable::relCache[i] = nullptr;
+    }
 }
 
 /* This function will open a relation having name `relName`.
