@@ -10,7 +10,8 @@
  * This ensures that if the system has a forced shutdown during the course of the session,
  * the previous state of the disk is not lost.
  */
-Disk::Disk() {
+Disk::Disk()
+{
   /* An efficient method to copy files */
   /* Copy Disk to Disk Run Copy */
   std::ifstream src(DISK_PATH, std::ios::binary);
@@ -25,7 +26,8 @@ Disk::Disk() {
  * Used to update the changes made to the disk on graceful termination of the latest session.
  * This ensures that these changes are visible in future sessions.
  */
-Disk::~Disk() {
+Disk::~Disk()
+{
   /* An efficient method to copy files */
   /* Copy Disk Run Copy to Disk */
   std::ifstream src(DISK_RUN_COPY_PATH, std::ios::binary);
@@ -42,9 +44,15 @@ Disk::~Disk() {
  *         (MUST be Allocated by caller)
  * blockNum - Block number of the disk block to be read.
  */
-int Disk::readBlock(unsigned char *block, int blockNum) {
+int Disk::readBlock(unsigned char *block, int blockNum)
+{
   FILE *disk = fopen(DISK_RUN_COPY_PATH, "rb");
-  if (blockNum < 0 || blockNum > DISK_BLOCKS - 1) {
+  if (disk == nullptr)
+  {
+    return FAILURE;
+  }
+  if (blockNum < 0 || blockNum > DISK_BLOCKS - 1)
+  {
     return E_OUTOFBOUND;
   }
   const int offset = blockNum * BLOCK_SIZE;
@@ -60,9 +68,15 @@ int Disk::readBlock(unsigned char *block, int blockNum) {
  *         (MUST be Allocated by caller)
  * blockNum - Block number of the disk block to be written into.
  */
-int Disk::writeBlock(unsigned char *block, int blockNum) {
+int Disk::writeBlock(unsigned char *block, int blockNum)
+{
   FILE *disk = fopen(DISK_RUN_COPY_PATH, "rb+");
-  if (blockNum < 0 || blockNum > DISK_BLOCKS - 1) {
+  if (disk == nullptr)
+  {
+    return FAILURE;
+  }
+  if (blockNum < 0 || blockNum > DISK_BLOCKS - 1)
+  {
     return E_OUTOFBOUND;
   }
   const int offset = blockNum * BLOCK_SIZE;
