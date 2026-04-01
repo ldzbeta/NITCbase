@@ -67,3 +67,122 @@ int AttrCacheTable::getAttrCatEntry(int relId, char attrName[ATTR_SIZE], AttrCat
   return E_ATTRNOTEXIST;
 }
 
+int AttrCacheTable::getSearchIndex(int relId,int attrOffset, IndexId *searchIndex) {
+
+  if (relId < 0 or relId >= MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if (AttrCacheTable::attrCache[relId] == nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *attrCacheEntry = AttrCacheTable::attrCache[relId];
+
+  for(/* each attribute corresponding to relation with relId */
+      int offset=0;attrCacheEntry;offset++,attrCacheEntry = attrCacheEntry->next)
+  {
+    if (/* attrName/offset field of the AttrCatEntry
+        is equal to the input attrName/attrOffset */
+        offset == attrCacheEntry->attrCatEntry.offset)
+    {
+      //copy the searchIndex field of the corresponding Attribute Cache entry
+      //in the Attribute Cache Table to input searchIndex variable.
+      *searchIndex = attrCacheEntry->searchIndex;
+      return SUCCESS;
+    }
+  }
+
+  return E_ATTRNOTEXIST;
+}
+
+int AttrCacheTable::getSearchIndex(int relId, char attrName[ATTR_SIZE],
+                                   IndexId *searchIndex) {
+
+  if (relId < 0 or relId >= MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if (AttrCacheTable::attrCache[relId] == nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *attrCacheEntry = AttrCacheTable::attrCache[relId];
+
+  while (attrCacheEntry) {
+    if (strcmp(attrCacheEntry->attrCatEntry.attrName, attrName) == 0) {
+      *searchIndex = attrCacheEntry->searchIndex;
+      return SUCCESS;
+    }
+    attrCacheEntry = attrCacheEntry->next;
+  }
+
+  return E_ATTRNOTEXIST;
+}
+
+int AttrCacheTable::setSearchIndex(int relId, char attrName[ATTR_SIZE], IndexId *searchIndex) {
+
+  if (relId < 0 or relId >= MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if (AttrCacheTable::attrCache[relId] == nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *curr=AttrCacheTable::attrCache[relId];
+
+  for(/* each attribute corresponding to relation with relId */
+   ;curr;curr=curr->next)
+  {
+    if (/* attrName/offset field of the AttrCatEntry
+        is equal to the input attrName/attrOffset */
+      strcmp(curr->attrCatEntry.attrName, attrName) == 0)
+    {
+      // copy the input searchIndex variable to the searchIndex field of the
+      //corresponding Attribute Cache entry in the Attribute Cache Table.
+      curr->searchIndex = *searchIndex;
+      return SUCCESS;
+    }
+  }
+
+  return E_ATTRNOTEXIST;
+}
+
+int AttrCacheTable::setSearchIndex(int relId,int attrOffset, IndexId *searchIndex) {
+
+    if (relId < 0 or relId >= MAX_OPEN) {
+    return E_OUTOFBOUND;
+  }
+
+  if (AttrCacheTable::attrCache[relId] == nullptr) {
+    return E_RELNOTOPEN;
+  }
+  AttrCacheEntry *curr=AttrCacheTable::attrCache[relId];
+  int index=0;
+  while(curr){
+    if(attrOffset==index){
+        curr->searchIndex=*searchIndex;
+        return SUCCESS;
+    }
+    index++;
+    curr=curr->next;
+  }
+
+  return E_ATTRNOTEXIST;
+}
+
+int AttrCacheTable::resetSearchIndex(int relId, char attrName[ATTR_SIZE]) {
+
+  // declare an IndexId having value {-1, -1}
+  // set the search index to {-1, -1} using AttrCacheTable::setSearchIndex
+  // return the value returned by setSearchIndex
+   IndexId indexId = {-1, -1};
+  return AttrCacheTable::setSearchIndex(relId, attrName, &indexId);
+}
+
+int AttrCacheTable::resetSearchIndex(int relId,int attrOffset) {
+
+  // declare an IndexId having value {-1, -1}
+  // set the search index to {-1, -1} using AttrCacheTable::setSearchIndex
+  // return the value returned by setSearchIndex
+  IndexId indexId = {-1, -1};
+  return AttrCacheTable::setSearchIndex(relId,attrOffset,&indexId);
+}
