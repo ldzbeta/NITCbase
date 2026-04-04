@@ -211,7 +211,11 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
         first record.
     */
     RelCacheTable::resetSearchIndex(srcRelId);
-    AttrCacheTable::resetSearchIndex(srcRelId,attr);
+    AttrCacheTable::resetSearchIndex(srcRelId, attr);
+
+    // reset comparison counters for this SELECT query
+    LScomp = 0;
+    BTScomp = 0;
 
     // read every record that satisfies the condition by repeatedly calling
     // BlockAccess::search() until there are no more records to be read
@@ -231,6 +235,9 @@ int Algebra::select(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE], char attr
 
     // Close the targetRel by calling closeRel() method of schema layer
     Schema::closeRel(targetRel);
+
+    // printf("Comparisons Linear Search : %lld\n", LScomp);
+    // printf("Comparisons B+ Tree Search : %lld\n", BTScomp);
 
     return SUCCESS;
 }
