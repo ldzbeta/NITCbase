@@ -155,7 +155,7 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
     // If relation with name oldName does not exist (result of linearSearch is {-1, -1})
     //    return E_RELNOTEXIST;
     if (result.block == -1 && result.slot == -1)
-        return E_RELEXIST;
+        return E_RELNOTEXIST;
 
     /* get the relation catalog record of the relation to rename using a RecBuffer
        on the relation catalog [RELCAT_BLOCK] and RecBuffer.getRecord function
@@ -214,7 +214,7 @@ int BlockAccess::renameAttribute(char relName[ATTR_SIZE], char oldName[ATTR_SIZE
     //    return E_RELNOTEXIST;
 
     if (relCatRecId.block == -1 && relCatRecId.slot == -1)
-        return E_RELEXIST;
+        return E_RELNOTEXIST;
 
     /* reset the searchIndex of the attribute catalog using
        RelCacheTable::resetSearchIndex() */
@@ -389,6 +389,8 @@ int BlockAccess::insert(int relId, Attribute *record)
         header.numAttrs = relcatEntry.numAttrs;
         header.numSlots = relcatEntry.numSlotsPerBlk;
         header.numEntries = 0;
+        header.numSlots = numOfSlots;
+        header.numAttrs = numOfAttributes;
         blkbuffer.setHeader(&header);
 
         /*
@@ -454,33 +456,36 @@ int BlockAccess::insert(int relId, Attribute *record)
     // the relation. (use RelCacheTable::setRelCatEntry function)
     relcatEntry.numRecs++;
     RelCacheTable::setRelCatEntry(relId, &relcatEntry);
-     /* B+ Tree Insertions */
+    std::cout << relcatEntry.numRecs << " records inserted " << std::endl;
+    /* B+ Tree Insertions */
     // (the following section is only relevant once indexing has been implemented)
 
     int flag = SUCCESS;
     // Iterate over all the attributes of the relation
     // (let attrOffset be iterator ranging from 0 to numOfAttributes-1)
-    for(int i=0;i<header.numAttrs;i++)
+    for (int i = 0; i < relcatEntry.numAttrs; i++)
     {
         // get the attribute catalog entry for the attribute from the attribute cache
         // (use AttrCacheTable::getAttrCatEntry() with args relId and attrOffset)
         AttrCatEntry attrCatEntry;
-        int ret=AttrCacheTable::getAttrCatEntry(relId,i,&attrCatEntry);
-        if(ret!=SUCCESS) return ret;
+        int ret = AttrCacheTable::getAttrCatEntry(relId, i, &attrCatEntry);
+        if (ret != SUCCESS)
+            return ret;
         // get the root block field from the attribute catalog entry
-        int rootblk=attrCatEntry.rootBlock;
+        int rootblk = attrCatEntry.rootBlock;
         // if index exists for the attribute(i.e. rootBlock != -1)
-        if(rootblk!=-1)
+        if (rootblk != -1)
         {
             /* insert the new record into the attribute's bplus tree using
              BPlusTree::bPlusInsert()*/
             int retVal = BPlusTree::bPlusInsert(relId, attrCatEntry.attrName,
                                                 record[i], rec_id);
 
-            if (retVal == E_DISKFULL) {
+            if (retVal == E_DISKFULL)
+            {
                 //(index for this attribute has been destroyed)
                 // flag = E_INDEX_BLOCKS_RELEASED
-                flag=E_INDEX_BLOCKS_RELEASED;
+                flag = E_INDEX_BLOCKS_RELEASED;
             }
         }
     }
@@ -699,7 +704,7 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE])
         // if index exists for the attribute (rootBlock != -1), call bplus destroy
         if (rootBlock != -1)
         {
-            // delete the bplus tree rooted at rootBlock using 
+            // delete the bplus tree rooted at rootBlock using
             BPlusTree::bPlusDestroy(rootBlock);
         }
     }

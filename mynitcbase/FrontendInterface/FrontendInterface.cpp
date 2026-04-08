@@ -432,6 +432,8 @@ int RegexHandler::selectAttrFromJoinHandler() {
     return FAILURE;
   }
 
+  // Preserve legacy behavior: default to the attribute order as written in WHERE.
+  // The backend (Frontend/Algebra) is responsible for normalizing if swapped.
   attrToTruncatedArray(m[6], joinAttributeOne);
   attrToTruncatedArray(m[8], joinAttributeTwo);
 

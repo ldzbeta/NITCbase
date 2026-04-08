@@ -3,6 +3,37 @@
 #include <cstring>
 #include <iostream>
 
+static void normalizeJoinAttributesIfSwapped(char relname_source_one[ATTR_SIZE],
+                                            char relname_source_two[ATTR_SIZE],
+                                            char join_attr_one[ATTR_SIZE],
+                                            char join_attr_two[ATTR_SIZE])
+{
+  int relId1 = OpenRelTable::getRelId(relname_source_one);
+  int relId2 = OpenRelTable::getRelId(relname_source_two);
+  if (relId1 < 0 || relId2 < 0)
+  {
+    return;
+  }
+
+  AttrCatEntry dummy;
+  bool attr1InRel1 = (AttrCacheTable::getAttrCatEntry(relId1, join_attr_one, &dummy) == SUCCESS);
+  bool attr2InRel2 = (AttrCacheTable::getAttrCatEntry(relId2, join_attr_two, &dummy) == SUCCESS);
+  if (attr1InRel1 && attr2InRel2)
+  {
+    return;
+  }
+
+  bool attr1InRel2 = (AttrCacheTable::getAttrCatEntry(relId2, join_attr_one, &dummy) == SUCCESS);
+  bool attr2InRel1 = (AttrCacheTable::getAttrCatEntry(relId1, join_attr_two, &dummy) == SUCCESS);
+  if (attr1InRel2 && attr2InRel1)
+  {
+    char tmp[ATTR_SIZE];
+    strcpy(tmp, join_attr_one);
+    strcpy(join_attr_one, join_attr_two);
+    strcpy(join_attr_two, tmp);
+  }
+}
+
 int Frontend::create_table(char relname[ATTR_SIZE], int no_attrs, char attributes[][ATTR_SIZE],
                            int type_attrs[])
 {
@@ -42,13 +73,13 @@ int Frontend::alter_table_rename_column(char relname[ATTR_SIZE], char attrname_f
 int Frontend::create_index(char relname[ATTR_SIZE], char attrname[ATTR_SIZE])
 {
   // Schema::createIndex
-    return Schema::createIndex(relname,attrname);
+  return Schema::createIndex(relname, attrname);
 }
 
 int Frontend::drop_index(char relname[ATTR_SIZE], char attrname[ATTR_SIZE])
 {
   // Schema::dropIndex
-  return Schema::dropIndex(relname,attrname);
+  return Schema::dropIndex(relname, attrname);
 }
 
 int Frontend::insert_into_table_values(char relname[ATTR_SIZE], int attr_count, char attr_values[][ATTR_SIZE])
@@ -112,7 +143,9 @@ int Frontend::select_from_join_where(char relname_source_one[ATTR_SIZE], char re
                                      char join_attr_one[ATTR_SIZE], char join_attr_two[ATTR_SIZE])
 {
   // Algebra::join
-  return SUCCESS;
+
+  normalizeJoinAttributesIfSwapped(relname_source_one, relname_source_two, join_attr_one, join_attr_two);
+  return Algebra::join(relname_source_one, relname_source_two, relname_target, join_attr_one, join_attr_two);
 }
 
 int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE], char relname_source_two[ATTR_SIZE],
@@ -121,7 +154,40 @@ int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE]
                                               int attr_count, char attr_list[][ATTR_SIZE])
 {
   // Algebra::join + project
+  // Call join() method of the Algebra Layer with correct arguments to
+  // create a temporary target relation with name TEMP.
+
+  normalizeJoinAttributesIfSwapped(relname_source_one, relname_source_two, join_attr_one, join_attr_two);
+
+  int ret = Algebra::join(relname_source_one, relname_source_two, (char *)TEMP, join_attr_one, join_attr_two);
+  // TEMP results from the join of the two source relation (and hence it
+  // contains all attributes of the source relations except the join attribute
+  // of the second source relation)
+  if (ret != SUCCESS)
+    return ret;
+  // Return Error values, if not successful
+  int relId = OpenRelTable::openRel((char *)TEMP);
+  if (relId < 0 or relId >= MAX_OPEN)
+  {
+    Schema::deleteRel((char *)TEMP);
+    return relId;
+  }
+  // Open the TEMP relation using OpenRelTable::openRel()
+  // if open fails, delete TEMP relation using Schema::deleteRel() and
+  // return the error code
+
+  // Call project() method of the Algebra Layer with correct arguments to
+  // create the actual target relation from the TEMP relation.
+  // (The final target relation contains only those attributes mentioned in attr_list)
+  ret = Algebra::project((char *)TEMP, relname_target, attr_count, attr_list);
+  OpenRelTable::closeRel(relId);
+  Schema::deleteRel((char *)TEMP);
+  // close the TEMP relation using OpenRelTable::closeRel()
+  // delete the TEMP relation using Schema::deleteRel()
+  if (ret != SUCCESS)
+    return ret;
   return SUCCESS;
+  // Return Success or Error values appropriately
 }
 
 int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
