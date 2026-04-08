@@ -1,0 +1,34 @@
+CREATE TABLE Organizers (name STR, eventId NUM);
+OPEN TABLE Organizers;
+INSERT INTO Organizers VALUES FROM organizers.csv;
+
+OPEN TABLE Events;
+OPEN TABLE Participants;
+
+SELECT * FROM Participants JOIN Events INTO PartEvents WHERE Participants.event = Events.title;
+OPEN TABLE PartEvents;
+
+SELECT * FROM PartEvents JOIN Organizers INTO PartEventsOrg WHERE PartEvents.id = Organizers.eventId;
+OPEN TABLE PartEventsOrg;
+
+SELECT regNo, event, location, name FROM PartEventsOrg INTO ParticipantNotify;
+open table ParticipantNotify;
+ALTER TABLE RENAME ParticipantNotify COLUMN event TO eventName;
+ALTER TABLE RENAME ParticipantNotify COLUMN name TO organizerName;
+
+SELECT regNo, event FROM PartEventsOrg INTO ThomasParticipants WHERE name = Thomas;
+open table ThomasParticipants;
+ALTER TABLE RENAME ThomasParticipants COLUMN event TO eventName;
+
+CLOSE TABLE ThomasParticipants;
+CLOSE TABLE ParticipantNotify;
+CLOSE TABLE PartEventsOrg;
+CLOSE TABLE PartEvents;
+CLOSE TABLE Participants;
+CLOSE TABLE Events;
+CLOSE TABLE Organizers;
+
+DROP TABLE PartEvents;
+DROP TABLE PartEventsOrg;
+drop TABLE ThomasParticipants;
+drop TABLE ParticipantNotify;

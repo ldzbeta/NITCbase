@@ -1,0 +1,48 @@
+FDISK;
+CREATE TABLE Events (id NUM, title STR, location STR);
+CREATE TABLE Locations (name STR, capacity NUM);
+CREATE TABLE Participants (regNo NUM, event STR);
+OPEN TABLE Events;
+OPEN TABLE Locations;
+OPEN TABLE Participants;
+INSERT INTO Events VALUES FROM events2.csv;
+INSERT INTO Locations VALUES FROM locations.csv;
+INSERT INTO Participants VALUES FROM participants.csv;
+
+
+SELECT name FROM Locations JOIN Events INTO EventLocations WHERE Locations.name = Events.location;
+
+SELECT * FROM Participants JOIN Events INTO PartEvents WHERE Participants.event = Events.title;
+OPEN TABLE PartEvents;
+SELECT regNo, event FROM PartEvents INTO AudiPeople WHERE location = Audi;
+ALTER TABLE RENAME AudiPeople COLUMN event TO eventName;
+
+SELECT * FROM PartEvents JOIN Locations INTO PartEventsLoc WHERE PartEvents.location = Locations.name;
+OPEN TABLE PartEventsLoc;
+SELECT * FROM PartEventsLoc INTO CapMin100 WHERE capacity >= 100;
+OPEN TABLE CapMin100;
+SELECT regNo, event FROM CapMin100 INTO MiniEventPeople WHERE capacity <= 200;
+ALTER TABLE RENAME MiniEventPeople COLUMN event TO eventName;
+
+CLOSE TABLE CapMin100;
+CLOSE TABLE PartEventsLoc;
+CLOSE TABLE PartEvents;
+CLOSE TABLE Participants;
+CLOSE TABLE Locations;
+CLOSE TABLE Events;
+
+DROP TABLE CapMin100;
+DROP TABLE PartEventsLoc;
+DROP TABLE PartEvents;
+DROP TABLE EventLocations;
+drop TABLE AudiPeople;
+drop TABLE MiniEventPeople;
+DROP TABLE Events;
+DROP TABLE Locations;
+DROP TABLE Participants;
+
+
+PRINT TABLE EventLocations;
+PRINT TABLE AudiPeople;
+PRINT TABLE MiniEventPeople;
+EXIT;
