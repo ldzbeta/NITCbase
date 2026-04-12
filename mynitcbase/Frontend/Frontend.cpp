@@ -3,36 +3,6 @@
 #include <cstring>
 #include <iostream>
 
-static void normalizeJoinAttributesIfSwapped(char relname_source_one[ATTR_SIZE],
-                                            char relname_source_two[ATTR_SIZE],
-                                            char join_attr_one[ATTR_SIZE],
-                                            char join_attr_two[ATTR_SIZE])
-{
-  int relId1 = OpenRelTable::getRelId(relname_source_one);
-  int relId2 = OpenRelTable::getRelId(relname_source_two);
-  if (relId1 < 0 || relId2 < 0)
-  {
-    return;
-  }
-
-  AttrCatEntry dummy;
-  bool attr1InRel1 = (AttrCacheTable::getAttrCatEntry(relId1, join_attr_one, &dummy) == SUCCESS);
-  bool attr2InRel2 = (AttrCacheTable::getAttrCatEntry(relId2, join_attr_two, &dummy) == SUCCESS);
-  if (attr1InRel1 && attr2InRel2)
-  {
-    return;
-  }
-
-  bool attr1InRel2 = (AttrCacheTable::getAttrCatEntry(relId2, join_attr_one, &dummy) == SUCCESS);
-  bool attr2InRel1 = (AttrCacheTable::getAttrCatEntry(relId1, join_attr_two, &dummy) == SUCCESS);
-  if (attr1InRel2 && attr2InRel1)
-  {
-    char tmp[ATTR_SIZE];
-    strcpy(tmp, join_attr_one);
-    strcpy(join_attr_one, join_attr_two);
-    strcpy(join_attr_two, tmp);
-  }
-}
 
 int Frontend::create_table(char relname[ATTR_SIZE], int no_attrs, char attributes[][ATTR_SIZE],
                            int type_attrs[])
@@ -144,7 +114,6 @@ int Frontend::select_from_join_where(char relname_source_one[ATTR_SIZE], char re
 {
   // Algebra::join
 
-  normalizeJoinAttributesIfSwapped(relname_source_one, relname_source_two, join_attr_one, join_attr_two);
   return Algebra::join(relname_source_one, relname_source_two, relname_target, join_attr_one, join_attr_two);
 }
 
@@ -157,7 +126,6 @@ int Frontend::select_attrlist_from_join_where(char relname_source_one[ATTR_SIZE]
   // Call join() method of the Algebra Layer with correct arguments to
   // create a temporary target relation with name TEMP.
 
-  normalizeJoinAttributesIfSwapped(relname_source_one, relname_source_two, join_attr_one, join_attr_two);
 
   int ret = Algebra::join(relname_source_one, relname_source_two, (char *)TEMP, join_attr_one, join_attr_two);
   // TEMP results from the join of the two source relation (and hence it
@@ -196,7 +164,5 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE])
   // argv stores every token delimited by space and comma
 
   // implement whatever you desire
-  return Schema::deleteRel((char *)TEMP);
-
   return SUCCESS;
 }
